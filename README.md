@@ -14,7 +14,7 @@ poetry install
 ## Запуск
 
 ```bash
-poetry run task2
+poetry run task2_bignum_arithmetic
 ```
 
 ## Пример работы программы
