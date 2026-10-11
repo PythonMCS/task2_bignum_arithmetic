@@ -98,48 +98,6 @@ def mul(a, sign_a, b, sign_b, M):
     return result, sign_result
 
 
-def mul_small(a, k, M):
-    new_sp = []
-    carry = 0
-    for dig in a:
-        curr = dig * k + carry
-        new_sp.append(curr % M)
-        carry = curr // M
-    while carry > 0:
-        new_sp.append(carry % M)
-        carry //= M
-    return normalize(new_sp)
-
-
-def add_small(a, k, M):
-    new_sp = a.copy()
-    i = 0
-    carry = k
-    while carry > 0:
-        if i == len(new_sp):
-            new_sp.append(0)
-        curr = new_sp[i] + carry
-        new_sp[i] = curr % M
-        carry = curr // M
-        i += 1
-    return normalize(new_sp)
-
-def div_small(a, k, M):
-    sp = []
-    rem = 0
-
-    for i in range(len(a) - 1, -1, -1):
-        curr = rem * M + a[i]
-        dig = curr // k
-        rem = curr % k
-        sp.append(dig)
-
-    quot = list(reversed(sp))
-    quot = normalize(quot)
-
-    return quot, rem
-
-
 def div_abs(a, b, M):
     a = normalize(a)
     b = normalize(b)
@@ -183,41 +141,46 @@ def div_big(a, sign_a, b, sign_b, M):
     quot = add_abs(quot, [1], M)
     return quot, -1
 
-def from_string(strr, M):
-    strr = strr.strip()
+def from_string(s, M):
+    s = s.strip()
+    if not s:
+        raise ValueError("Пустая строка")
     sign = 1
-    if strr.startswith("-"):
-        sign = -1
-        strr = strr[1:]
-    elif strr.startswith("+"):
-        strr = strr[1:]
-    if not strr or not strr.isdigit():
-        raise ValueError("Некорректное целое число")
+    if s[0] in "+-":
+        if s[0] == "-":
+            sign = -1
+        s = s[1:]
+    if not s:
+        raise ValueError("Нет разрядов")
 
-    result = [0]
+    parts = s.split(":")
+    parts = list(reversed(parts))
 
-    for ch in strr:
-        digit = int(ch)
-        result = mul_small(result, 10, M)
-        result = add_small(result, digit, M)
-    result = normalize(result)
-    if result == [0]:
+    digits = []
+    for part in parts:
+        if not part or not part.isdigit():
+            raise ValueError(f"Некорректный разряд: {part}")
+        digit = int(part)
+        if digit >= M:
+            raise ValueError(f"Каждый разряд должен быть < {M}")
+        digits.append(digit) 
+
+    digits = normalize(digits)
+    if digits == [0]:
         sign = 1
-    return result, sign
+    return digits, sign
 
-def to_string(a, sign, M):
+def to_string(a, sign):
     a = normalize(a)
     if a == [0]:
         return "0"
-    temp = a.copy()
-    dec_dig = []
-    while temp != [0]:
-        temp, rem = div_small(temp, 10, M)
-        dec_dig.append(str(rem))
-    result = "".join(reversed(dec_dig))
+    order = list(reversed(a))
+    order_list = (str(s) for s in order)
+    result = ":".join(order_list)
     if sign < 0:
         result = "-" + result
     return result
+
 
 
 def check_capacity(a, N):
@@ -256,8 +219,9 @@ def main():
             print("Неизвестная операция.")
             continue
         try:
-            first = input("Введите первое целое число: ")
-            second = input("Введите второе целое число: ")
+            first = input(f"Введите первое число (разряды через ':', каждый < {M}): ")
+            second = input(f"Введите второе число (разряды через ':', каждый < {M}): ")
+
             a, sign_a = from_string(first, M)
             b, sign_b = from_string(second, M)
             check_capacity(a, N)
@@ -271,7 +235,7 @@ def main():
             else:
                 result, sign_result = div_big(a, sign_a, b, sign_b, M)
             result = check_capacity(result, N)
-            print(f"Результат: {to_string(result, sign_result, M)}")
+            print(f"Результат: {to_string(result, sign_result)}")
         except ValueError as error:
             print("Ошибка:", error)
         except ZeroDivisionError as error:
