@@ -16,17 +16,17 @@ def compare_abs(num1: list[int], num2: list[int]):
 
     if len(num1) > len(num2):
         return 1
-    elif len(num1) < len(num2):
+    if len(num1) < len(num2):
         return -1
-    else:
-        for i in range(len(num1) -1, -1, -1):
-            if num1[i] == num2[i]:
-                continue
-            elif num1[i] > num2[i]:
-                return 1
-            elif num1[i] < num2[i]:
-                return -1
-        return 0
+
+    for i in range(len(num1) -1, -1, -1):
+        if num1[i] == num2[i]:
+            continue
+        if num1[i] > num2[i]:
+            return 1
+        if num1[i] < num2[i]:
+            return -1
+    return 0
 
     
 def add_abs(num1: list[int], num2: list[int], base: int) -> list[int]:
@@ -194,7 +194,7 @@ def to_string(num: list[int], sign: int) -> str:
     return result
 
 
-def assert_capacity(num: list[int], max_digits: int) -> list[int]:
+def check_capacity(num: list[int], max_digits: int) -> list[int]:
     num = normalize(num)
     if len(num) > max_digits:
         raise OverflowError(
@@ -203,11 +203,11 @@ def assert_capacity(num: list[int], max_digits: int) -> list[int]:
     return num
 
 
-def input_integer(predicat: Callable[[int], bool], prompt_msg: str, warning_msg: str) -> int:
+def input_integer(predicate: Callable[[int], bool], prompt_msg: str, warning_msg: str) -> int:
     while True:
         try:
             num = int(input(prompt_msg))
-            if not predicat(num):
+            if not predicate(num):
                 print(warning_msg)
                 continue
             return num
@@ -218,7 +218,7 @@ def input_integer(predicat: Callable[[int], bool], prompt_msg: str, warning_msg:
 def input_operand(base: int, max_digits: int, prompt_msg: str) -> tuple[list[int], int]:
     raw_input = input(prompt_msg)
     num, sign = from_string(raw_input, base)
-    assert_capacity(num, max_digits)
+    check_capacity(num, max_digits)
 
     return num, sign
 
@@ -255,7 +255,7 @@ def main():
                 result, sign_result = mul(a, sign_a, b, sign_b, M)
             else:
                 result, sign_result = div_big(a, sign_a, b, sign_b, M)
-            result = assert_capacity(result, N)
+            result = check_capacity(result, N)
             print(f"Результат: {to_string(result, sign_result)}")
         except ValueError as error:
             print("Ошибка:", error)
