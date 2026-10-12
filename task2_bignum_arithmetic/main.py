@@ -1,159 +1,170 @@
-def normalize(sp):
-    sp = sp.copy()
+from collections.abc import Callable
 
-    while len(sp) > 1 and sp[-1] == 0:
-        sp.pop()
 
-    return sp
+def normalize(digits: list[int]) -> list[int]:
+    digits = digits.copy()
 
-def compare_abs(a, b):
-    a = normalize(a)
-    b = normalize(b)
+    while len(digits) > 1 and digits[-1] == 0:
+        digits.pop()
 
-    if len(a) > len(b):
+    return digits
+
+
+def compare_abs(num1: list[int], num2: list[int]):
+    num1 = normalize(num1)
+    num2 = normalize(num2)
+
+    if len(num1) > len(num2):
         return 1
-    elif len(a) < len(b):
+    elif len(num1) < len(num2):
         return -1
     else:
-        for i in range(len(a) -1, -1, -1):
-            if a[i] == b[i]:
+        for i in range(len(num1) -1, -1, -1):
+            if num1[i] == num2[i]:
                 continue
-            elif a[i] > b[i]:
+            elif num1[i] > num2[i]:
                 return 1
-            elif a[i] < b[i]:
+            elif num1[i] < num2[i]:
                 return -1
         return 0
-def add_abs(a, b, M):
-    new_sp = []
+
+    
+def add_abs(num1: list[int], num2: list[int], base: int) -> list[int]:
+    new_num = []
     carry = 0
-    max_len = max(len(a), len(b))
+    max_len = max(len(num1), len(num2))
 
     for i in range(max_len):
-        dig_a = a[i] if i < len(a) else 0
-        dig_b = b[i] if i < len(b) else 0
+        dig_a = num1[i] if i < len(num1) else 0
+        dig_b = num2[i] if i < len(num2) else 0
         cur_sum = dig_a + dig_b + carry
-        new_sp.append(cur_sum % M)
-        carry = cur_sum // M
+        new_num.append(cur_sum % base)
+        carry = cur_sum // base
     if carry != 0:
-        new_sp.append(carry)
-    return new_sp
+        new_num.append(carry)
+    return new_num
 
-def sub_abs(a, b, M):
-    new_sp = []
+
+def sub_abs(num1: list[int], num2: list[int], base: int) -> list[int]:
+    new_num = []
     anti_carry = 0
-    for i in range(len(a)):
-        dig_a = a[i]
-        dig_b = b[i] if i < len(b) else 0
+    for i in range(len(num1)):
+        dig_a = num1[i]
+        dig_b = num2[i] if i < len(num2) else 0
         cur_sub = dig_a - dig_b - anti_carry
         if cur_sub < 0:
-            cur_sub += M
+            cur_sub += base
             anti_carry = 1
         else:
             anti_carry = 0
-        new_sp.append(cur_sub)
-    return normalize(new_sp)
+        new_num.append(cur_sub)
+    return normalize(new_num)
 
-def add(a, sign_a, b, sign_b, M):
-    if sign_a == sign_b:
-        new_sp = add_abs(a, b, M)
-        return new_sp, sign_a
 
-    comp = compare_abs(a, b)
+def add(num1: list[int], sign1: int, num2: list[int], sign2: int, base: int) -> tuple[list[int], int]:
+    if sign1 == sign2:
+        new_num = add_abs(num1, num2, base)
+        return new_num, sign1
+
+    comp = compare_abs(num1, num2)
 
     if comp == 0:
         return [0], 1
     elif comp > 0:
-        new_sp = sub_abs(a, b, M)
-        return new_sp, sign_a
+        new_num = sub_abs(num1, num2, base)
+        return new_num, sign1
     else:
-        new_sp = sub_abs(b, a, M)
-        return new_sp, sign_b
-
-def sub(a, sign_a, b, sign_b, M):
-    return add(a, sign_a, b, -sign_b, M)
+        new_num = sub_abs(num2, num1, base)
+        return new_num, sign2
 
 
-def mul_abs(a, b, M):
-    new_sp = [0] * (len(a) + len(b) + 1)
-    for i in range(len(a)):
+def sub(num1: list[int], sign1: int, num2: list[int], sign2: int, base: int) -> tuple[list[int], int]:
+    return add(num1, sign1, num2, -sign2, base)
+
+
+def mul_abs(num1: list[int], num2: list[int], base: int) -> list[int]:
+    new_num = [0] * (len(num1) + len(num2) + 1)
+    for i in range(len(num1)):
         carry = 0
-        for j in range(len(b)):
+        for j in range(len(num2)):
             pos = i + j
-            curr = new_sp[pos] + a[i] * b[j] + carry
-            new_sp[pos] = curr % M
-            carry = curr // M
-        pos = i + len(b)
+            curr = new_num[pos] + num1[i] * num2[j] + carry
+            new_num[pos] = curr % base
+            carry = curr // base
+        pos = i + len(num2)
         while carry > 0:
-            curr = new_sp[pos] + carry
-            new_sp[pos] = curr % M
-            carry = curr // M
+            curr = new_num[pos] + carry
+            new_num[pos] = curr % base
+            carry = curr // base
             pos += 1
-    return normalize(new_sp)
+    return normalize(new_num)
 
-def mul(a, sign_a, b, sign_b, M):
-    result = mul_abs(a, b, M)
+
+def mul(num1: list[int], sign1: int, num2: list[int], sign2: int, base: int) -> tuple[list[int], int]:
+    result = mul_abs(num1, num2, base)
     if result == [0]:
         return [0], 1
-    sign_result = sign_a * sign_b
+    sign_result = sign1 * sign2
     return result, sign_result
 
 
-def div_abs(a, b, M):
-    a = normalize(a)
-    b = normalize(b)
-    if b == [0]:
+def div_abs(num1: list[int], num2: list[int], base: int) -> tuple[list[int], list[int]]:
+    num1 = normalize(num1)
+    num2 = normalize(num2)
+    if num2 == [0]:
         raise ZeroDivisionError("Деление на ноль")
 
-    if compare_abs(a, b) < 0:
-        return [0], a
+    if compare_abs(num1, num2) < 0:
+        return [0], num1
     rem = [0]
-    new_sp = []
-    for i in range(len(a) - 1, -1, -1):
-        rem = normalize([a[i]] + rem)
+    new_num = []
+    for i in range(len(num1) - 1, -1, -1):
+        rem = normalize([num1[i]] + rem)
         left = 0
-        right = M - 1
+        right = base - 1
         digit = 0
         while left <= right:
             middle = (left + right) // 2
-            prod = mul_abs(b, [middle], M)
+            prod = mul_abs(num2, [middle], base)
             if compare_abs(prod, rem) <= 0:
                 digit = middle
                 left = middle + 1
             else:
                 right = middle - 1
 
-        new_sp.append(digit)
+        new_num.append(digit)
         if digit != 0:
-            prod = mul_abs(b, [digit], M)
-            rem = sub_abs(rem, prod, M)
-    quot = list(reversed(new_sp))
+            prod = mul_abs(num2, [digit], base)
+            rem = sub_abs(rem, prod, base)
+    quot = list(reversed(new_num))
     return normalize(quot), normalize(rem)
 
 
-def div_big(a, sign_a, b, sign_b, M):
-    quot, rem = div_abs(a, b, M)
-    if sign_a == sign_b:
+def div_big(num1: list[int], sign1: int, num2: list[int], sign2: int, base: int) -> tuple[list[int], int]:
+    quot, rem = div_abs(num1, num2, base)
+    if sign1 == sign2:
         return quot, 1
     if rem == [0]:
         if quot == [0]:
             return [0], 1
         return quot, -1
-    quot = add_abs(quot, [1], M)
+    quot = add_abs(quot, [1], base)
     return quot, -1
 
-def from_string(s, M):
-    s = s.strip()
-    if not s:
+
+def from_string(raw_input: str, base: int) -> tuple[list[int], int]:
+    raw_input = raw_input.strip()
+    if not raw_input:
         raise ValueError("Пустая строка")
     sign = 1
-    if s[0] in "+-":
-        if s[0] == "-":
+    if raw_input[0] in "+-":
+        if raw_input[0] == "-":
             sign = -1
-        s = s[1:]
-    if not s:
+        raw_input = raw_input[1:]
+    if not raw_input:
         raise ValueError("Нет разрядов")
 
-    parts = s.split(":")
+    parts = raw_input.split(":")
     parts = list(reversed(parts))
 
     digits = []
@@ -161,8 +172,8 @@ def from_string(s, M):
         if not part or not part.isdigit():
             raise ValueError(f"Некорректный разряд: {part}")
         digit = int(part)
-        if digit >= M:
-            raise ValueError(f"Каждый разряд должен быть < {M}")
+        if digit >= base:
+            raise ValueError(f"Каждый разряд должен быть < {base}")
         digits.append(digit) 
 
     digits = normalize(digits)
@@ -170,11 +181,12 @@ def from_string(s, M):
         sign = 1
     return digits, sign
 
-def to_string(a, sign):
-    a = normalize(a)
-    if a == [0]:
+
+def to_string(num: list[int], sign: int) -> str:
+    num = normalize(num)
+    if num == [0]:
         return "0"
-    order = list(reversed(a))
+    order = list(reversed(num))
     order_list = (str(s) for s in order)
     result = ":".join(order_list)
     if sign < 0:
@@ -182,27 +194,40 @@ def to_string(a, sign):
     return result
 
 
-
-def check_capacity(a, N):
-    a = normalize(a)
-    if len(a) > N:
+def assert_capacity(num: list[int], max_digits: int) -> list[int]:
+    num = normalize(num)
+    if len(num) > max_digits:
         raise OverflowError(
-            f"Число превышает максимально допустимые {N} разрядов"
+            f"Число превышает максимально допустимые {max_digits} разрядов"
         )
-    return a
+    return num
+
+
+def input_integer(predicat: Callable[[int], bool], prompt_msg: str, warning_msg: str) -> int:
+    while True:
+        try:
+            num = int(input(prompt_msg))
+            if not predicat(num):
+                print(warning_msg)
+                continue
+            return num
+        except ValueError:
+            print("Введите целое число.")
+
+
+def input_operand(base: int, max_digits: int, prompt_msg: str) -> tuple[list[int], int]:
+    raw_input = input(prompt_msg)
+    num, sign = from_string(raw_input, base)
+    assert_capacity(num, max_digits)
+
+    return num, sign
+
 
 def main():
     print("Длинная арифметика")
-    while True:
-        try:
-            M = int(input("Введите основание системы счисления M (>= 2): "))
-            N = int(input("Введите максимальное количество разрядов N (>= 1): "))
-            if M < 2 or N < 1:
-                print("M должно быть >= 2, а N >= 1")
-                continue
-            break
-        except ValueError:
-            print("Введите целые числа.")
+    M = input_integer(lambda x: x >= 2, "Введите основание системы счисления M (>= 2): ", "M должно быть >= 2")
+    N = input_integer(lambda x: x >= 1, "Введите максимальное количество разрядов N (>= 1): ", "N должно быть >= 1")
+    
     while True:
         print()
         print("Выберите операцию:")
@@ -219,13 +244,9 @@ def main():
             print("Неизвестная операция.")
             continue
         try:
-            first = input(f"Введите первое число (разряды через ':', каждый < {M}): ")
-            second = input(f"Введите второе число (разряды через ':', каждый < {M}): ")
+            a, sign_a = input_operand(M, N, f"Введите первое число (разряды через ':', каждый < {M}): ")
+            b, sign_b = input_operand(M, N, f"Введите второе число (разряды через ':', каждый < {M}): ")
 
-            a, sign_a = from_string(first, M)
-            b, sign_b = from_string(second, M)
-            check_capacity(a, N)
-            check_capacity(b, N)
             if operation == "1":
                 result, sign_result = add(a, sign_a, b, sign_b, M)
             elif operation == "2":
@@ -234,7 +255,7 @@ def main():
                 result, sign_result = mul(a, sign_a, b, sign_b, M)
             else:
                 result, sign_result = div_big(a, sign_a, b, sign_b, M)
-            result = check_capacity(result, N)
+            result = assert_capacity(result, N)
             print(f"Результат: {to_string(result, sign_result)}")
         except ValueError as error:
             print("Ошибка:", error)
@@ -242,6 +263,7 @@ def main():
             print("Ошибка:", error)
         except OverflowError as error:
             print("Переполнение:", error)
+
 
 if __name__ == "__main__":
     main()
