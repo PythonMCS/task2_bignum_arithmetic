@@ -164,7 +164,10 @@ def from_string(raw_input: str, base: int) -> tuple[list[int], int]:
     if not raw_input:
         raise ValueError("Нет разрядов")
 
-    parts = raw_input.split(":")
+    if base <= 10:
+        parts = list(raw_input)
+    else:
+        parts = raw_input.split(":")
     parts = list(reversed(parts))
 
     digits = []
@@ -182,13 +185,13 @@ def from_string(raw_input: str, base: int) -> tuple[list[int], int]:
     return digits, sign
 
 
-def to_string(num: list[int], sign: int) -> str:
+def to_string(num: list[int], sign: int, base: int) -> str:
     num = normalize(num)
     if num == [0]:
         return "0"
-    order = list(reversed(num))
-    order_list = (str(s) for s in order)
-    result = ":".join(order_list)
+    order = reversed(num)
+    separator = "" if base <= 10 else ":"
+    result = separator.join(str(d) for d in order)
     if sign < 0:
         result = "-" + result
     return result
@@ -244,8 +247,9 @@ def main():
             print("Неизвестная операция.")
             continue
         try:
-            a, sign_a = input_operand(M, N, f"Введите первое число (разряды через ':', каждый < {M}): ")
-            b, sign_b = input_operand(M, N, f"Введите второе число (разряды через ':', каждый < {M}): ")
+            hint = "цифры без разделителей" if M <= 10 else "разряды через ':'"
+            a, sign_a = input_operand(M, N, f"Введите первое число ({hint}, каждый < {M}): ")
+            b, sign_b = input_operand(M, N, f"Введите второе число ({hint}, каждый < {M}): ")
 
             if operation == "1":
                 result, sign_result = add(a, sign_a, b, sign_b, M)
@@ -256,7 +260,7 @@ def main():
             else:
                 result, sign_result = div_big(a, sign_a, b, sign_b, M)
             result = check_capacity(result, N)
-            print(f"Результат: {to_string(result, sign_result)}")
+            print(f"Результат: {to_string(result, sign_result, M)}")
         except ValueError as error:
             print("Ошибка:", error)
         except ZeroDivisionError as error:
